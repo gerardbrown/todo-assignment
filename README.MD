@@ -1,55 +1,74 @@
 # NodeJS TODO Assignment
 
 This is a simple Node.js RESTful application that manages users and tasks for those users.
-The application uses a MySQL database to persist data and provides various REST endpoints to perform CRUD operations on users and tasks.
-Additionally, the application supports search and pagination for APIs and includes security measures for authentication using JSON Web Tokens (JWT).
-A scheduled job is set up to handle pending tasks with past execution dates.
+This project provides a set of API endpoints to perform CRUD operations for users and tasks. 
+The application uses MySQL for data persistence, Sequelize as the ORM, and Joi for validation. 
+Additionally, it includes a scheduled job using node-cron to manage task statuses automatically.
 
 ## Design Patterns Used
 
 #### MVC (Model-View-Controller):
-The application follows the MVC design pattern, which separates the concerns of the data (Model), the presentation (View), and the application logic (Controller).
-This promotes better organization and maintainability of the codebase.
+The application follows the MVC design pattern, which separates the concerns of data handling (Model), user interface (View), and business logic (Controller). 
+This pattern promotes code organization and reusability, making it easier to manage complex applications.
 
-#### Repository Pattern:
-The application uses a repository pattern to abstract database operations from the controllers.
-The repositories interact with the database and return the requested data to the controllers.
-This makes the code more modular and testable.
+#### Singleton Pattern:
+The application follows the Singleton design pattern, the `sequelize` instance (database connection) follows the singleton pattern, ensuring that there is only one instance of the database connection throughout the application.
+
+#### Middleware Pattern
+
+Express.js, the web framework used in this project, follows the middleware pattern. Middleware functions are used to perform tasks like parsing request bodies, authentication, error handling, etc., before passing control to the route handlers (controller).
 
 ## Considerations
 
-1. **Scheduled Job**:
-- A scheduled job using node-cron is set up to handle pending tasks with past execution dates.
-- In a production application, this job might be executed by a separate worker service to ensure continuous execution.
+1. **Microservices Architecture**:
+- The application follows a microservices architecture to manage users and tasks as separate entities. 
+- This architectural choice promotes modularity, scalability, and maintainability. Each service can evolve independently, making it easier for multiple teams to work on different modules simultaneously.
 
-2. **Input Validation**:
-- Input validation is implemented using Joi for creating and updating users and tasks.
-- Validating the request body helps prevent incorrect data from being stored in the database.
+2. **Data Persistence**:
+- MySQL is used as the underlying database for data persistence. 
+- The application leverages Sequelize as the ORM to interact with the database. 
+- Using a relational database like MySQL allows for structured data storage, efficient querying, and data consistency.
 
-3. **Database Migrations**:
-- The application uses Sequelize migrations to set up the database schema.
-- This allows for versioning and easy database changes during development and production deployments.
+3. **Validation and Error Handling**:
+- Joi, a robust validation library, is utilized for input validation. 
+- This ensures data integrity and protects against malformed requests. 
+- Proper error handling is implemented to provide meaningful error messages, improving the user experience and aiding developers in identifying and resolving issues.
 
-4. **Environment Configuration**:
-- The application can be further improved by implementing environment-specific configurations, such as using .env files, to manage different environments (development, production).
+4. **Scheduled Job**:
+- A scheduled job using `node-cron` is set up to check for pending tasks at regular intervals. 
+- If the `date_time` for a task has passed, the job automatically updates the task's status to "done." 
+- This automated job ensures that tasks are executed in a timely manner without manual intervention.
 
-5. **UI (Frontend)**:
+5. **Unit Tests**:
+- The application includes unit tests using Jest and Supertest. 
+- These tests verify the functionality of various components, ensuring that the code behaves as expected. 
+- Proper test coverage helps maintain the reliability of the application and facilitates code refactoring.
+
+## Potential Enhancements
+
+1. **UI (Frontend)**:
 - The application does not include a user interface as it focuses solely on providing REST endpoints.
 - The UI can be implemented separately using modern frontend frameworks like React, Angular, or Vue.js.
 
-6. **Docker Compose**:
-- Docker was not implemented in this application.
-- The decision not to use Docker was based on the project's scope and simplicity. As a small, standalone project, Dockerization would have added unnecessary complexity without significant benefits.
-- The development environment already allowed direct interactions with Node.js and MySQL, making Dockerization less necessary.
+2. **Authentication and Authorization**:
+- Currently, the application does not include authentication and authorization mechanisms. 
+- Implementing user authentication with technologies like JWT (JSON Web Tokens) would enable secure user-specific access to APIs, protecting sensitive data and preventing unauthorized access.
 
-7. **API Versioning**:
-- API versioning was not implemented in the project due to its limited scope and simplicity, serving as an internal application.
-- Semantic versioning is followed for internal APIs, ensuring backward compatibility for minor releases.
-- The application's straightforward nature and low likelihood of significant API changes further reduced the need for explicit versioning.
+3. **Error Logging**:
+- Incorporating a logging mechanism using tools like Winston or Bunyan would allow recording errors and events that occur during the application's runtime. 
+- This helps in tracking issues and gaining insights into the application's performance.
 
-8. **Security Measures**:
-- The application does not include JWT-based authentication to secure the APIs based on the project's scope and simplicity.
+4. **API Rate Limiting**:
+- Implementing rate limiting controls the number of requests a user can make to the APIs within a specified time frame. 
+- It helps to prevent abuse, malicious attacks, and excessive API consumption, thereby enhancing application security and performance.
 
+5. **API Versioning**:
+- To maintain backward compatibility and facilitate future changes, introducing API versioning could be beneficial. 
+- This allows introducing new features and improvements without breaking existing client implementations.
+
+5. **Dockerization**:
+- Containerizing the application using Docker allows for easy deployment and scalability. 
+- It simplifies the process of setting up the development and production environments, ensuring consistency across different deployment environments.
 
 ## Getting Started
 
@@ -95,6 +114,10 @@ Create DB schema on MySQL:
 ```
 npx sequelize-cli db:create
 ```
+Create the files for the MySQL tables:
+```
+npx sequelize-cli migration:generate --name create_table
+```
 Create tables on MySQL:
 ```
 npx sequelize-cli db:migrate
@@ -107,7 +130,7 @@ To start the application, run the following command:
 npm start
 ```
 
-The application should now be running on http://localhost:3000.
+The application should now be running on http://localhost:4000.
 
 
 ## REST API Endpoints
@@ -116,41 +139,31 @@ The application should now be running on http://localhost:3000.
 
 - `POST /api/users`: Create a new user.
 - `PUT /api/users/:id`: Update an existing user.
-- `GET /api/users`: List all users (requires authentication).
-- `GET /api/users/:id`: Get user information by ID (requires authentication).
+- `GET /api/users`: List all users.
+- `GET /api/users/:id`: Get user information by ID.
 
 ### Tasks:
 
-- `POST /api/users/:user_id/tasks`: Create a new task for a user (requires authentication).
-- `PUT /api/users/:user_id/tasks/:task_id`: Update an existing task for a user (requires authentication).
-- `DELETE /api/users/:user_id/tasks/:task_id`: Delete a task for a user (requires authentication).
-- `GET /api/users/:user_id/tasks?limit=10&page=1`: Get all tasks for a user with pagination (requires authentication).
-- `GET /api/users/:user_id/tasks/:task_id`: Get task information by ID for a user (requires authentication).
-- `PUT /api/users/:user_id/tasks/:task_id/status`: Update task status (requires authentication).
-- `GET /api/users/:user_id/tasks/search`: Search tasks for a user (requires authentication).
-
-
-### Authentication:
-
-- `POST /api/auth/login`: Login to obtain an authentication token.
-
-## Validation and Error Messages
-
-The controllers for creating and updating users and tasks now validate the request body using Joi. If validation fails, the application will return a 400 status code with a detailed error message describing the issue.
-
-## Error Handling Middleware
-
-A new error handling middleware has been implemented. This middleware catches errors thrown during request processing and provides appropriate error responses. If the application encounters a syntax error or an unhandled error, it returns a 500 status code with a generic error message.
-
-These enhancements provide better feedback to clients when input validation fails or when unexpected errors occur, leading to an improved user experience and more informative error responses.
+- `POST /api/users/:user_id/tasks`: Create a new task for a user.
+- `PUT /api/users/:user_id/tasks/:task_id`: Update an existing task for a user.
+- `DELETE /api/users/:user_id/tasks/:task_id`: Delete a task for a user.
+- `GET /api/users/:user_id/tasks?limit=10&page=1`: Get all tasks for a user with pagination.
+- `GET /api/users/:user_id/tasks/:task_id`: Get task information by ID for a user.
+- `PUT /api/users/:user_id/tasks/:task_id/status`: Update task status.
+- `GET /api/users/:user_id/tasks/search`: Search tasks for a user.
 
 ## Testing the Application
+
+To test the CRON, use the following command:
+```
+node test-cron.js
+```
 
 To test the application, use the following command:
 ```
 npm test
 ```
-This will run the Jest test suite and validate the endpoints' functionality, including authentication, validation, and basic error handling.
+This will run the Jest test suite and validate the endpoints' functionality, including validation, and basic error handling.
 
 ### Testing the REST Services
 
@@ -158,50 +171,50 @@ To test the RESTful APIs, you can use tools like cURL or Postman:
 
 - For creating a user:
 ```
-curl -i -H "Content-Type: application/json" -X POST -d '{"username":"jsmith","first_name":"John","last_name":"Smith"}' http://localhost:3000/api/users
+curl -i -H "Content-Type: application/json" -X POST -d '{"username":"jsmith","first_name":"John","last_name":"Smith","email": "johns@example.com"}' http://localhost:4000/api/users
 ```
 
 - For updating a user:
 ```
-curl -i -H "Content-Type: application/json" -X PUT -d '{"first_name":"John","last_name":"Doe"}' http://localhost:3000/api/users/{id}
+curl -i -H "Content-Type: application/json" -X PUT -d '{"username":"jdoe","first_name":"John","last_name":"Doe","email": "johnd@example.com"}' http://localhost:4000/api/users/{id}
 ```
 
 - For fetching all users:
 ```
-curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:3000/api
+curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:4000/api/users
 ```
 
 - For creating a task:
 ```
-curl -i -H "Content-Type: application/json" -X POST -d '{"name":"My task","description":"Description of task","date_time":"2016-05-25 14:25:00"}' http://localhost:3000/api/users/{user_id}/tasks
+curl -i -H "Content-Type: application/json" -X POST -d '{"name":"My task","description":"Description of task","date_time":"2023-08-06 14:25:00"}' http://localhost:4000/api/users/{user_id}/tasks
 ```
 
 - For fetching all tasks for a user:
 ```
-curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:3000/api/users/{user_id}/tasks?limit=10&page=1
+curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:4000/api/users/{user_id}/tasks?limit=10&page=1
 ```
 
 - For fetching a specific task for a user:
 ```
-curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:3000/api/users/{user_id}/tasks/{task_id}
+curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:4000/api/users/{user_id}/tasks/{task_id}
 ```
 
 - For updating a task for a user:
 ```
-curl -i -H "Content-Type: application/json" -X PUT -d '{"name":"My updated task"}' http://localhost:3000/api/users/{user_id}/tasks/{task_id}
+curl -i -H "Content-Type: application/json" -X PUT -d '{"name":"My updated task"}' http://localhost:4000/api/users/{user_id}/tasks/{task_id}
 ```
 
 - For updating the status of a task for a user:
 ```
-curl -i -H "Content-Type: application/json" -X PUT -d '{"status":"done"}' http://localhost:3000/api/users/{user_id}/tasks/{task_id}/status
+curl -i -H "Content-Type: application/json" -X PUT -d '{"status":"done"}' http://localhost:4000/api/users/{user_id}/tasks/{task_id}/status
 ```
 
 - For deleting a task for a user:
 ```
-curl -i -H "Content-Type: application/json" -X DELETE http://localhost:3000/api/users/{user_id}/tasks/{task_id}
+curl -i -H "Content-Type: application/json" -X DELETE http://localhost:4000/api/users/{user_id}/tasks/{task_id}
 ```
 
 - For searching tasks for a user:
 ```
-curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:3000/api/users/{user_id}/tasks/search?query=mytask
+curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:4000/api/users/{user_id}/searchTasks?query=mytask
 ```
